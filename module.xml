@@ -6,9 +6,13 @@
 		<texttospeech>Text To Speech</texttospeech>
 	</menuitems>
 
-	<version>2.0.0.0</version>
+	<version>2.0.0.1</version>
 	<publisher>pwhite@hiddenmatrix.org</publisher>
-	<location>release/texttospeech-2.0.0.0.tgz</location>
+	<location>release/texttospeech-2.0.0.1.tgz</location>
+
+	<depends>
+		<module>core ge 2.10</module>
+	</depends>
 
 	<description>
 		<p>
@@ -37,6 +41,9 @@
 	</description>
 	<info></info>
 	<changelog>
+		*2.0.0.1 - 2012-04-25 - Paul White (pwhite@hiddenmatrix.org)*
+			- Added dependency for freepbx 2.10 or higher
+
 		*2.0.0.0 - 2012-04-24 - Paul White (pwhite@hiddenmatrix.org)*
 			- Major overhaul of entire module.  Almost all code was rewritten.
 			- Engines are now modular, making it very easy to add new ones.
