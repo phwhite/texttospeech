@@ -1,0 +1,263 @@
+############################################################################
+TextToSpeech Module for FreePBX, v2.0.0.0
+############################################################################
+
+Original Author: _xo_ - Xavier Ourciere (Orig Release: 2006-07-06)
+Previous Modder: JakFrost (Last Updated on 2009-11-25, v1.3.1.3)
+
+Current Maintainer: Paul White (pwhite@hiddenmatrix.org)
+
+Contributed Modules Documentation:
+    http://www.freepbx.org/support/documentation/module-documentation/third-party-unsupported-modules
+
+Contributed Modules Direct Mirror:
+    http://mirror.freepbx.org/modules/release/contributed_modules/
+
+
+============================================================================
+Description
+============================================================================
+
+This module provides the ability to create and manage Text To Speech entries
+within FreePBX.  These entries can be used many different ways, of which the
+top ones are: As custom system recordings created in the asterisk dir
+"sounds/texttospeech/", and as interim destinations where the text will be
+spoken and then the user forwarded on to another destination or returned to
+an IVR.
+
+The text itself can be statically configured, or fetched from several
+different sources such as a text file, a shell command, or a URL.  It can be
+configured to synthesize the text once (static mode), or fetch the text
+and re-synthesize each time the text-to-speech entry is used (dynamic mode).
+
+The text can be synthesized using one of several different engines, including
+Google TTS, Microsoft TTS, Cepstral SWIFT, eSpeak, FLite, and Text2Wave.  
+
+For those of you who have the newer versions of Cepstral SWIFT that does not
+include the save-to-file license by default, a dynamic option is provided for
+the Cepstral SWIFT engine which will then utilize the Asterisk app_swift
+application each time the text-to-speech entry is used.
+
+
+============================================================================
+Text-To-Speech Entry Configuration Documentation
+============================================================================
+
+Settings
+--------
+
+Name
+	The Name of the Text To Speech entry to help you identify
+	it.  It can only be composed of alpha-numeric characters
+	(a-z A-Z 0-9), the underscore (_) and dash (-) but no
+	spaces or other characters.
+
+Source
+	Text Source Module to use
+
+Engine
+	Engine Module to use
+
+Allow Playback Control
+	Allows user to control playback (Pause, FF, Rew)
+	NOTE: When enabled, all dynamic capabilities are not allowed.
+
+	When Checked...
+		Abort			Key used to abort playback (optional)
+		Rewind			Key used to rewind playback
+		Pause			Key used to pause playback
+		Forward			Key used to fast-forward playback
+		Time			Amount of time in ms to Rewind or Fast-forward
+
+
+Allow Aborting Playback
+	Allows user to press any key to abort playback
+
+
+Source 'Text' Settings
+----------------------
+
+Text
+	The text that you wish to be spoken
+
+
+Source 'Command' Settings
+-------------------------
+
+Dynamic
+	When enabled, the command will be ran each time the text-to-speech
+	entry is used.  When not enabled, the command is ran once during
+	adding/modifying the entry, and the output is cached.
+
+	When checked...
+		Destination On Fail			Destination if command fails
+
+Command
+	The path, command and arguments
+
+
+Source 'File' Settings
+----------------------
+
+Dynamic
+	When enabled, the file will be read each time the text-to-speech
+	entry is used.  When not enabled, the file is read once during
+	adding/modifying the entry, and is cached.
+
+	When checked...
+		Destination On Fail			Destination if file doesn't exist
+
+Filename
+	The full path and filename of file
+
+
+Source 'URL' Settings
+---------------------
+
+Dynamic
+	When enabled, the URL will be fetched each time the text-to-speech
+	entry is used.  When not enabled, the URL is fetched once during
+	adding/modifying the entry, and is cached.
+
+	When checked...
+		Timeout						Number of seconds to wait for URL
+		Destination On Fail			Destination if unable to fetch URL
+
+URL
+	The URL (beginning with http://, https://, or ftp://)
+
+Strip Tags
+	When checked, all HTML tags returned by the URL are stripped
+
+
+Engine 'Google Translation' Settings
+------------------------------------
+
+Language
+	The language in which the text should be spoken
+
+Speed Factor
+	Speed in which the synthesized text should be played back
+
+
+Engine 'Microsoft Translation' Settings
+---------------------------------------
+
+Language
+	The language in which the text should be spoken
+
+Client ID
+	Your Client ID that was registered with Microsoft (see end of README
+	for more information)
+
+Client Secret
+	Your Client Secret that was regsitered with Microsoft (see end of README
+	for more information)
+
+Make Default
+	When checked, the Client ID and Client Secret provided are saved in 
+	the /etc/asterisk/microsoft-tts.conf file to be used as default values
+	when using the microsoft engine.
+
+
+Engine 'Cepstral Swift' Settings
+--------------------------------
+
+Dynamic
+	When enabled, The text will be synthesized using the Asterisk app_swift
+	application, each time the text-to-speech entry is used.  This does not
+	require generating a sound file, thus the additional save-to-file license
+	is not required from Cepstral.
+
+Voice
+	The voice to use.  Note that this can be overridden if the SSML markup
+	language is used in the source text.
+
+Arguments
+	Arguments to be passed to the swift command line utility.  Not applicable
+	if dynamic is enabled.
+
+
+Engine 'eSpeak' Settings
+------------------------
+
+Voice
+	Voice to use.
+
+Arguments
+	Arguments to be passed to the espeak command line utility.
+
+
+Engine 'Festival Flite' Settings
+--------------------------------
+
+Arguments
+	Arguments to be passed to the flite command line utility.
+
+
+Engine 'Festival Text2Wave' Settings
+------------------------------------
+
+Arguments
+	Arguments to be passed to the text2wave command line utility.
+
+
+
+============================================================================
+Using Microsoft Translation Text-To-Speech Engine
+============================================================================
+
+The Microsoft Translation engine takes advantage of Microsoft's Translation
+API.  To gain access to this API, you must first subscribe to the Translation
+API service through Microsoft's Azure Marketplace.  They do provide a free
+subscription which includes up to 2 million characters a month.
+
+If you don't already have a subscription or client ID/secret, please follow
+the steps below.  You can find out more detailed information by visting:
+	http://msdn.microsoft.com/en-us/library/hh454950.aspx
+
+
+Step 1
+------
+
+Subscribe to the Microsoft Translator API on Azure Marketplace.
+
+Go to this URL:
+	https://datamarket.azure.com/dataset/1899a118-d202-492c-aa16-ba21c33c06cb
+
+You will then need to sign-in using your Microsoft Live account, or
+register a new one.
+
+Once you've chosen a subscription (such as the 2,000,000 chars/month, you
+can move on to step 2.
+
+
+Step 2
+------
+
+You now need to create an application registeration to make use of the
+Microsoft Translator API subscription.
+
+Go to this URL and click on the green 'REGISTER' button:
+	https://datamarket.azure.com/developer/applications/
+
+Fill out the form as follows:
+
+	Client ID
+		Pick a unique ID here, example: "<your name>_pbx_mstts"
+
+	Name
+		Choose any name, example: "<your name> MS-TTS Asterisk App"
+
+	Client Secret
+		You can use the randomized one already filled in, or
+		create your own
+
+	Redirect URI
+		This isn't used for the translator API, however the Azure site
+		requires it to be filled in.  I suggest using a value such as
+		"http://localhost/mstts_oauth_response.aspx"
+
+Before you hit the 'CREATE' button, you need to write down and save
+the Client ID and the Client Secret.  These are the two values
+you will need to provide in the text-to-speech configuration.

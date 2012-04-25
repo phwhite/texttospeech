@@ -1,0 +1,35 @@
+.texttospeech-hr {
+	width: 75%;
+	margin-left: 0;
+	text-align: right;
+}
+
+.texttospeech-rlogo {
+	float:right;
+	position: relative;
+	margin-top:10px;
+	right: 5.0%;
+}
+
+.rnav {
+	float:right;
+	position: relative;
+	margin-top:10px;
+	right: 1.5%;
+	background-color: #FAFAFA;
+}
+
+.rnav ul {
+	/* make it scroll */
+	max-height:50em;
+	max-width:275px;
+	overflow:auto;
+}
+
+.rnav .ui-widget-content {
+	background: url(/admin/modules/texttospeech/assets/images/tango-tts.png) no-repeat;
+}
+
+.rnav .ui-widget-content a {
+	color: #072966;
+}

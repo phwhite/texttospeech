@@ -1,0 +1,342 @@
+#!/usr/bin/env php
+<?php
+
+/********************************************************************
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * ==================================================================
+ *
+ * FreePBX Module: texttospeech
+ *     Maintainer: Paul White <pwhite@hiddenmatrix.org>
+ *******************************************************************/
+
+// Pull in the freepbx system
+ob_start();
+include_once('/etc/freepbx.conf');
+ob_end_clean();
+
+include("phpagi.php");
+$agi = new AGI;
+
+define("DEBUG", 1);
+
+function ttsagi_php_var_name (&$iVar) {
+	foreach ($GLOBALS as $k=>$v)
+		$GLOBALS_0[$k] = $v;
+			 
+    $iVarSave = $iVar;
+    $iVar     =!$iVar;
+			 
+    $aDiffKeys = array_keys (array_diff_assoc ($GLOBALS_0, $GLOBALS));
+    $iVar      = $iVarSave;
+		 
+    return $aDiffKeys[0];
+}
+
+function ttsagi_debug($str, $lvl = 1, $nflag = false) {
+	global $agi;
+	global $logfile;
+	global $ttsagi_nflag;
+
+	if (DEBUG >= $lvl) {
+		if ($ttsagi_nflag) {
+			$ttsagi_prefix = "";
+			$str = trim($str);
+			$ttsagi_nflag = false;
+		}
+		else {
+			$ttsagi_prefix = '[ttsagi ' . date('m-d-Y H:i') . '] ';
+		}
+		if ($nflag) {
+			$estr = "";
+			$ttsagi_nflag = true;
+		}
+		else {
+			$estr = "\n";
+		}
+		if (isset($logfile)) {
+			fwrite($logfile, $ttsagi_prefix . $str . $estr);
+		}
+//		echo $ttsagi_prefix . $str . $estr;
+		$agi->verbose($str);
+	}
+}
+
+function ttsagi_dumpvar(&$var, $lvl = 1) {
+	global $logfile;
+
+	if (DEBUG >= $lvl) {
+		ob_start();
+		var_dump($var);
+		$output = ob_get_contents();
+		ob_end_clean();
+
+		$outlines = explode("\n", $output);
+
+		if (count($outlines) <= 2) {
+			$nflg = true;
+		}
+		else {
+			$nflg = false;
+		}
+
+		ttsagi_debug('Vardump...  ' . ttsagi_php_var_name($var) . ' = ', $lvl, $nflg);
+		foreach ($outlines as $oline) {
+			ttsagi_debug('   ' . $oline, $lvl);
+		}
+	}
+}
+
+function ttsagi_errorout($msg) {
+	global $agi;
+
+	$agi->verbose($msg);
+	ttsagi_debug($msg);
+
+	$agi->hangup();
+	exit(1);
+}
+
+function ttsagi_getvar($varname) {
+	global $agi;
+
+	$ret = $agi->get_variable($varname);
+	if ($ret['result'] == 1) {
+		return $ret['data'];
+	}
+
+	return '';
+}
+
+function ttsagi_goto($ndest, $elvl = 0) {
+	global $agi;
+
+	ttsagi_debug('Going to dest: ' . implode(',', $ndest));
+
+
+	switch(count($ndest)) {
+
+	case 3:
+//		$agi->goto_dest($ndest[0], $ndest[1], $ndest[2]);
+		$agi->exec_goto($ndest[0], $ndest[1], $ndest[2]);
+		break;
+
+	case 2:
+//		$agi->goto_dest($ndest[0], $ndest[1]);
+		$agi->exec_goto($ndest[0], $ndest[1]);
+		break;
+
+	default:
+//		$agi->goto_dest($ndest[0]);
+		$agi->exec_goto($ndest[0]);
+		break;
+
+	}
+
+	exit($elvl);
+}
+
+function ttsagi_playback($snd_file) {
+	global $agi;
+	global $tts;
+	global $tts_vars;
+
+	if ($tts_vars['allow_control']) {
+		$esc_digit = $tts_vars['control_esc'];
+		$fwd_digit = $tts_vars['control_fwd'];
+		$rew_digit = $tts_vars['control_rew'];
+		$pause_digit = $tts_vars['control_pause'];
+		$skipms = $tts_vars['control_skipms'];
+
+		ttsagi_debug("Starting controlled playback of " . $snd_file . ", Esc [" . $esc_digit . "], Fwd [" . $fwd_digit . "], Rew [" . $rew_digit . "], Pause [" . $pause_digit . "], SkipMS [" . $skipms . "]");
+		
+//		ttsagi_debug('CONTROL STREAM FILE "' . $snd_file . '" "' . $esc_digit . '" "' . $skipms . '" "' . $fwd_digit . '" "' . $rew_digit . '" "' . $pause_digit . '"');
+		$ret = $agi->evaluate('CONTROL STREAM FILE "' . $snd_file . '" "' . $esc_digit . '" "' . $skipms . '" "' . $fwd_digit . '" "' . $rew_digit . '" "' . $pause_digit . '"');
+		if ($ret['result'] != 0) {
+			ttsagi_debug("WARNING: Control-Stream-File result was (" . $ret['result'] . ")");
+			return false;
+		}
+		ttsagi_debug("Controlled Playback Complete");
+		return true;
+	}
+
+	if ($tts_vars['allow_skip']) {
+		ttsagi_debug("Starting abortable playback of " . $snd_file);
+		$esc_digits='0123456789*#';
+	}
+	else {
+		ttsagi_debug("Starting playback of " . $snd_file);
+		$esc_digits='';
+	}
+
+//	ttsagi_debug('$agi->stream_file(' . $snd_file . ', ' . $esc_digits . ');');
+	$ret = $agi->stream_file($snd_file, $esc_digits);
+	if ($ret['result'] < 0) {
+		ttsagi_debug("WARNING: Stream-File result was (" . $ret['result'] . ")");
+		return false;
+	}
+
+	ttsagi_debug("Playback Complete");
+	return true;
+}
+
+
+$tts = New texttospeech;
+
+if (!isset($argv[1])) {
+	ttsagi_errorout('ERROR: No text-to-speech ID passed');
+	exit(1);
+}
+$id = $argv[1];
+
+
+// Load TTS Entry
+$tts_vars = texttospeech_load_entry($id);
+if (!is_array($tts_vars)) {
+	ttsagi_errorout('ERROR: Failed to load TTS entry');
+	exit(1);
+}
+
+ttsagi_debug('Loaded ' . $tts_vars['id'] . ': ' . $tts_vars['name']
+	   		  . ', src [' . $tts_vars['source'] . '], eng [' . $tts_vars['engine'] . ']');
+ttsagi_dumpvar($tts_vars, 2);
+
+
+// Setup our TTS Object
+if ($tts->set_source_config($tts_vars['source_conf'], $tts_vars['source']) === false) {
+	ttsagi_errorout('ERROR: Failed to set source config');
+	exit(1);
+}
+
+if ($tts->set_engine_config($tts_vars['engine_conf'], $tts_vars['engine']) === false) {
+	ttsagi_errorout('ERROR: Failed to set engine config');
+	exit(1);
+}
+
+
+// no_answer: Answer channel unless configured not to...
+if (empty($tts_vars['no_answer']) || $tts_vars['no_answer'] == '0') {
+	ttsagi_debug("Answering channel");
+	$agi->answer();
+}
+
+
+// wait_before: Wait before playing text, if configured to do so...
+if (!empty($tts_vars['wait_before']) && $tts_vars['wait_before'] > 0) {
+	ttsagi_debug("BEFORE Wait: " . $tts_vars['wait_before'] . " seconds...");
+	sleep($tts_vars['wait_before']);
+}
+
+
+// Build-up some variables we're going to need
+$text_file = texttospeech_text_file($tts_vars['name']);
+$sound_file = texttospeech_sound_file($tts_vars['name']);
+$short_sound_file = texttospeech_sound_file($tts_vars['name'], true);
+
+if (!empty($tts_vars['destination'])) {
+	$dest = explode(',', $tts_vars['destination']);
+}
+else {
+	$dest = array();
+}
+
+if (!empty($tts->source->config['fail_dest'])) {
+	$src_fail_dest = explode(',', $tts->source->config['fail_dest']);
+}
+else {
+	$src_fail_dest = array();
+}
+
+if (!empty($tts->engine->config['fail_dest'])) {
+	$eng_fail_dest = explode(',', $tts->engine->config['fail_dest']);
+}
+else {
+	$eng_fail_dest = array();
+}
+
+
+
+// Source Check: If dynamic, fetch text now
+if ($tts->source->is_dynamic()) {
+	ttsagi_debug('Source is dynamic: Querying now...');
+	if ($tts->source->get($text_file) === false) {
+		if (count($src_fail_dest) == 0) {
+			ttsagi_errorout('ERROR: Querying source failed, and no failure destination set');
+		}
+
+		ttsagi_debug('WARNING: Querying source failed, jumping to failure destination');
+		ttsagi_goto($src_fail_dest);
+	}
+}
+
+
+// Engine Check...
+if ($tts->engine->is_dynamic()) {
+	// Dynamic.. Let engine handle it's output via AGI
+	ttsagi_debug("Engine is dynamic, passing AGI control to engine for output");
+
+	if (!empty($tts_vars['allow_skip'])) {
+		$allow_skip = true;
+	}
+	else {
+		$allow_skip = false;
+	}
+
+
+	if ($tts->engine->agi_convert($agi, $text_file, $allow_skip) === false) {
+		ttsagi_errorout('ERROR: Dynamic engine conversion FAILED.');
+	}
+}
+else {
+	// Static... But if source is dynamic, need to re-convert anyway
+	if ($tts->source->is_dynamic()) {
+		ttsagi_debug("Engine is static, Source is dynamic - Reconverting text...");
+		if ($tts->engine->convert($text_file, $sound_file) === false) {
+			ttsagi_errorout('ERROR: Converting dynamic source results FAILED.');
+		}
+		ttsagi_debug("Conversion complete, Handling playback...");
+	}
+	else {
+		ttsagi_debug("Engine & Source is static, Handling playback...");
+	}
+
+	ttsagi_playback($short_sound_file);
+}
+
+// wait_after: Wait after playing text, if configured to do so...
+if (!empty($tts_vars['wait_after']) && $tts_vars['wait_after'] > 0) {
+	ttsagi_debug("AFTER Wait: " . $tts_vars['wait_after'] . " seconds...");
+	sleep($tts_vars['wait_after']);
+}
+
+
+// Goto configured destination
+if (!empty($tts_vars['return_ivr'])) {
+	$ivr_context = ttsagi_getvar("IVR_CONTEXT");
+	if (!empty($ivr_context)) {
+		ttsagi_debug("Returning to IVR Context [" . $ivr_context . "]");
+		ttsagi_goto(array($ivr_context, 'return'));
+	}
+	ttsagi_debug("WARNING - Return to IVR requested, but no IVR Context");
+}
+else if (count($dest) > 0) {
+	ttsagi_debug("Calling final destination [" . implode(',', $dest) . "]");
+	ttsagi_goto($dest);
+}
+else {
+	ttsagi_debug("No destination configured");
+}
+
+ttsagi_debug("Hanging up...");
+$agi->hangup();
+exit(0);
+	
+?>
