@@ -260,7 +260,7 @@ function tts_submit_progress() {
 		_('DEBUG: Saving and Auto Applying Config...'),
 	)); ?>
 
-	<?php if ($tts_debug == false || $tts_auto_reload == false) { ?>
+	<?php if ($tts_debug_enabled == false || $tts_auto_reload == false) { ?>
 		var dcnt = 0;
 
 		<?php foreach($tts->sources as $sname => $sinfo) { $src = $sinfo['ptr']; ?>
@@ -276,31 +276,44 @@ function tts_submit_progress() {
 		<?php } // End of foreach() ?>
 	
 		if (dcnt > 0) {
-			var prog_title = String(msgSaving);
+			var prog_msg = String(msgSaving);
 		}
 		else {
-			var prog_title = String(msgSaveGen);
+			var prog_msg = String(msgSaveGen);
 		}
 	<?php } else { ?>
-		var prog_title = String(msgAutoApply);
+		var prog_msg = String(msgAutoApply);
 	<?php } ?>
 
-	$('<div></div>').progressbar({value: 100})
-	var box = $('<div></div>')
-		.html('<progress style="width: 100%">'
-			+ 'Please wait...'
-			+ '</progress>')
-		.dialog({
-			title: String(prog_title),
-			resizable: false,
-			modal: true,
-			height: 50,
-			position: ['center', 50],
-			close: function (e) {
-				$(e.target).dialog("destroy").remove();
-			}
-		});
+	return tts_submit_show_progress(prog_msg);
 }
+
+<?php if ($tts_legacy_fpbx == false) { ?>
+	function tts_submit_show_progress(msg) {
+		var prog_title = String(msg);
+	
+		$('<div></div>').progressbar({value: 100})
+		var box = $('<div></div>')
+			.html('<progress style="width: 100%">'
+				+ 'Please wait...'
+				+ '</progress>')
+			.dialog({
+				title: String(prog_title),
+				resizable: false,
+				modal: true,
+				height: 50,
+				position: ['center', 50],
+				close: function (e) {
+					$(e.target).dialog("destroy").remove();
+				}
+			});
+	}
+<?php } else { ?>
+	function tts_submit_show_progress(msg) {
+		var response_text = String(msg);
+	}
+<?php } ?>
 
 -->
 </script>
+
