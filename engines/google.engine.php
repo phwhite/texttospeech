@@ -217,6 +217,8 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 	} // end of javascript_out()
 	
 	function do_convert($textfile, $outfile, $conf) {
+		global $tts_debug;
+
 		$lang = isset($conf['language']) ? $conf['language'] : $this->defaults['language'];
 		$speed = isset($conf['speed']) ? $conf['speed'] : $this->defaults['speed'];
 	
@@ -224,8 +226,13 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 	
 		exec($command, $iout, $rval);
 		if ($rval == 0) {
+			$tts_debug->notice("Conversion Command Succeeded");
+			$tts_debug->verbose_dump("cmd", $command);
 			return true;
 		}
+		$tts_debug->error("Conversion Command Failed");
+		$tts_debug->error_dump("cmd", $command);
+		$tts_debug->error_dump("Output", $iout);
 		return false;
 	}
 }

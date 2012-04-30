@@ -194,6 +194,8 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 	}
 	
 	function do_convert($textfile, $outfile, $conf) {
+		global $tts_debug;
+
 		if ($this->is_supported < 1) {
 			return false;
 		}
@@ -208,8 +210,13 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 	
 		exec($command, $iout, $rval);
 		if ($rval == 0) {
+			$tts_debug->notice("Conversion Command Succeeded");
+			$tts_debug->verbose_dump("cmd", $command);
 			return true;
 		}
+		$tts_debug->error("Conversion Command Failed");
+		$tts_debug->error_dump("cmd", $command);
+		$tts_debug->error_dump("Output", $iout);
 		return false;
 	}
 }

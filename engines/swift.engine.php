@@ -45,9 +45,11 @@ class _tts_engine_swift extends _tts_engine {
 		if ($rval != 0 || empty($vlist)) {
 			return false;
 		}
-
 		$this->voices = array();
 		foreach($vlist as $vname) {
+			if (substr($vname, -1, 1) == '|') {
+				$vname = substr($vname, 0, -1);
+			}
 			$this->voices[$vname] = $vname;
 		}
 
@@ -117,6 +119,8 @@ class _tts_engine_swift extends _tts_engine {
 	}
 	
 	function do_convert($textfile, $outfile, $conf) {
+		global $tts_debug;
+
 		$voice = isset($conf['voice']) ? $conf['voice'] : $this->defaults['voice'];
 		$args = isset($conf['arguments']) ? $conf['arguments'] : $this->defaults['arguments'];
 
@@ -133,14 +137,24 @@ class _tts_engine_swift extends _tts_engine {
 		if ($rval == 0) {
 			$output = implode(" ", $iout);
 			if (strpos($output, "Usage:") !== FALSE) {
+				$tts_debug->error("Conversion Command Failed");
+				$tts_debug->error_dump("cmd", $command);
+				$tts_debug->error_dump("Output", $iout);
 				return false;
 			}
+			$tts_debug->notice("Conversion Command Succeeded");
+			$tts_debug->verbose_dump("cmd", $command);
 			return true;
 		}
+		$tts_debug->error("Conversion Command Failed");
+		$tts_debug->error_dump("cmd", $command);
+		$tts_debug->error_dump("Output", $iout);
 		return false;
 	}
 
 	function _agi_swift($agi, $text, $voice = null, $tmout = 0, $maxdigits = 0, &$dtmf = null) {
+		global $tts_debug;
+
 		$swift_args = '"';
 		if ($voice && !empty($voice)) {
 			$swift_args .= $voice . '^';
@@ -154,6 +168,8 @@ class _tts_engine_swift extends _tts_engine {
 		$ret = $agi->exec('swift', $swift_args);
 		if ($ret['result'] != 0) {
 			// Something must've happened
+			$tts_debug->error("AGI Conversion Failed");
+			$tts_debug->error_dump("swift_args", $swift_args);
 			return(-1);
 		}
 	
@@ -162,13 +178,19 @@ class _tts_engine_swift extends _tts_engine {
 			if ($dtmf) {
 				$dtmf = $ret['data'];
 			}
+			$tts_debug->notice("AGI Conversion Succeeded, Got DTMF Digit $dtmf");
+			$tts_debug->verbose_dump("swift_args", $swift_args);
 			return 1;
 		}
 
+		$tts_debug->notice("AGI Conversion Succeeded");
+		$tts_debug->verbose_dump("swift_args", $swift_args);
 		return 0;
 	}
 
 	function do_agi_convert($agi, $textfile, $allow_skip, $conf) {
+		global $tts_debug;
+
 		// Get the voice we should use from our config
 		$voice = isset($conf['voice']) ? $conf['voice'] : $this->defaults['voice'];
 

@@ -94,16 +94,20 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 		global $tts_debug;
 
 		if (!isset($conf['cmd']) || empty($conf['cmd'])) {
-			if ($tts_debug) dbug('Error: CMD get() called with no command in configuration');
 			return false;
 		}
 
 		$lines = Array();
 		exec(escapeshellcmd($conf['cmd']), $lines, $ret);
 		if ($ret != 0) {
-			if ($tts_debug) dbug('Error: CMD get() failed because command failed (ret=' . $ret . ')');
+			$tts_debug->error("Failed to get text");
+			$tts_debug->error_dump("cmd", $conf['cmd']);
+			$tts_debug->error_dump("Output", $lines);
 			return false;
 		}
+		$tts_debug->notice("Command completed successfully");
+		$tts_debug->verbose_dump("cmd", $conf['cmd']);
+		$tts_debug->verbose_dump("Output", $lines);
 
 		$text = '';
 		foreach($lines as $line) {
@@ -114,7 +118,6 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 		}
 
 		if (!file_put_contents($text_file, $text)) {
-			if ($tts_debug) dbug('Error: Failed to write CMD output to text file');
 			return false;
 		}
 

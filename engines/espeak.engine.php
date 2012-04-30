@@ -103,6 +103,8 @@ class _tts_engine_espeak extends _tts_engine {
 	}
 	
 	function do_convert($textfile, $outfile, $conf) {
+		global $tts_debug;
+
 		$voice = isset($conf['voice']) ? $conf['voice'] : $this->defaults['voice'];
 		$args = isset($conf['arguments']) ? $conf['arguments'] : $this->defaults['arguments'];
 
@@ -118,10 +120,17 @@ class _tts_engine_espeak extends _tts_engine {
 	
 		if ($rval == 0) {
 			if (!empty($iout)) {
+				$tts_debug->error("Conversion Command Failed");
+				$tts_debug->error_dump("cmd", $command);
+				$tts_debug->error_dump("Output", $iout);
 				return false;
 			}
+			$tts_debug->notice("Conversion Command Succeeded");
+			$tts_debug->verbose_dump("cmd", $command);
 			return true;
 		}
+		$tts_debug->error("Conversion Command Failed");
+		$tts_debug->error_dump("cmd", $command);
 		return false;
 	}
 }

@@ -143,23 +143,19 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 		global $tts_debug;
 
 		if (!isset($conf['url']) || empty($conf['url'])) {
-			if ($tts_debug) dbug('Error: URL get() called with no URL in configuration');
 			return false;
 		}
 
 		if (($pos = strpos($conf['url'], ':')) === false) {
-			if ($tts_debug) dbug('Error: URL get() called with bad URL in configuration');
 			return false;
 		}
 		if (substr($conf['url'], $pos, 3) != '://') {
-			if ($tts_debug) dbug('Error: URL get() called with bad URL in configuration');
 			return false;
 		}
 
 		$proto = substr($conf['url'], 0, $pos);
 		$wrappers = stream_get_wrappers();
 		if (!in_array($proto, $wrappers)) {
-			if ($tts_debug) dbug('Error: URL get() called with unsupported protocol (' . $proto . ')');
 			return false;
 		}
 
@@ -169,9 +165,13 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 						 );
 		$ctx = stream_context_create($ctx_opts);
 		if (($fp = fopen($conf['url'], 'r', false, $ctx)) == null) {
-			if ($tts_debug) dbug('Error: Failed to open URL "' . $conf['url'] . '"');
+			$tts_debug->error("Failed to get text from URL");
+			$tts_debug->error_dump("url", $conf['url']);
 			return false;
 		}
+
+		$tts_debug->notice("Text retreived from URL successfully");
+		$tts_debug->verbose_dump("url", $conf['url']);
 
 		$text = stream_get_contents($fp);
 		fclose($fp);
@@ -190,7 +190,6 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 		}
 
 		if (!file_put_contents($text_file, $text)) {
-			if ($tts_debug) dbug('Error: Failed to write URL contents to text file');
 			return false;
 		}
 

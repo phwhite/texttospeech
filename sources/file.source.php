@@ -76,13 +76,20 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 	} // end of javascript_out()
 
 	function do_get($text_file, $conf) {
+		global $tts_debug;
+
 		if (!isset($conf['file']) || empty($conf['file'])) {
 			return false;
 		}
 
 		if (!file_exists($conf['file'])) {
+			$tts_debug->error("Failed to get text, file does not exist");
+			$tts_debug->error_dump("file", $conf['file']);
 			return false;
 		}
+
+		$tts_debug->notice("Retreived text from file sucessfully");
+		$tts_debug->verbose_dump("file", $conf['file']);
 
 		$text = file_get_contents($conf['file']);
 		if (file_put_contents($text_file, $text)) {

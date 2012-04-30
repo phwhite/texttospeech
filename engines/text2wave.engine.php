@@ -55,14 +55,22 @@ class _tts_engine_text2wave extends _tts_engine {
 	}
 	
 	function do_convert($textfile, $outfile, $conf) {
+		global $tts_debug;
+
 		$args = isset($conf['arguments']) ? $conf['arguments'] : $this->defaults['arguments'];
 
 		$command = $this->engine_cmdpath . ' ' . escapeshellcmd($args) . ' -f 8000 ' . escapeshellarg($textfile) . ' -o ' . escapeshellarg($outfile);
 		exec($command, $iout, $rval);
 	
 		if ($rval == 0) {
+			$tts_debug->notice("Conversion Command Succeeded");
+			$tts_debug->verbose_dump("cmd", $command);
 			return true;
 		}
+
+		$tts_debug->error("Conversion Command Failed");
+		$tts_debug->error_dump("cmd", $command);
+		$tts_debug->error_dump("Output", $iout);
 		return false;
 	}
 }
