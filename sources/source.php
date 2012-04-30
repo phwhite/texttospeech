@@ -183,7 +183,7 @@ class _tts_source {
 		/****  Dynamic Config: Fail Destination ****/
 		$label = fpbx_label(	_('Destination On Fail'),
 								_('Destination to goto if dynamic query fails')		);
-		$fdest_html .= '<table>';
+		$fdest_html = '<table>';
 		$fdest_html .= drawselects(empty($this->config['fail_dest']) ?
 									  	null : $this->config['fail_dest'], $this->destidx);
 		$fdest_html .= '</table>';
