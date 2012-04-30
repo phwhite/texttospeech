@@ -17,8 +17,20 @@
  *     Maintainer: Paul White <pwhite@hiddenmatrix.org>
  *******************************************************************/
 
+// Check for play_audio right off the bat on legacy fpbx
+if ($tts_legacy_fpbx == true) {
+	if ($_REQUEST['action'] == "play_audio") {
+		include_once(dirname(__FILE__) . "/play_audio.php");
+		exit;
+	}
+}
+
 // Include the crypt helper for our audio player
 require_once(dirname(__FILE__) . '/helpers/crypt.helper.php');
+
+// Include the form helper, just in case this is a pre 2.10 freepbx
+// system which doesn't include it by default
+require_once(dirname(__FILE__) . '/helpers/form.helper.php');
 
 // Reset our page tab order
 $tabindex = 0;
@@ -38,8 +50,11 @@ else {
 	$_REQUEST['destination'] = '';
 }
 
+
 // Process our form variables
 $tts_vars = texttospeech_process_request($_REQUEST);
+texttospeech_debug_prefix($tts_vars);
+
 
 // Handle form actions
 switch ($action) {
@@ -83,6 +98,7 @@ default:
 		// Load our config information from the database
 		$tts_vars = texttospeech_load_entry($tts_vars['id']);
 	}
+
 	break;
 
 }
@@ -91,6 +107,7 @@ $tts->set_tts_vars($tts_vars);
 
 // Output rnav list
 include_once(dirname(__FILE__) . '/views/rnav.php');
+
 
 // Global table used multiple tiles
 $table = new CI_Table;
@@ -136,6 +153,7 @@ echo '<br>';
 <?php if( isset( $tts_vars['id'] ) ) echo ( '&nbsp;<input name="delete" type="submit" value="'._("Delete").'" tabindex="++$tabindex">' ); ?>
 </h6>
 <?php
+
 
 // Output Javascript
 include_once(dirname(__FILE__) . '/views/javascript.php');
