@@ -6,12 +6,12 @@
 		<texttospeech>Text To Speech</texttospeech>
 	</menuitems>
 
-	<version>2.0.0.1</version>
+	<version>2.0.0.2</version>
 	<publisher>pwhite@hiddenmatrix.org</publisher>
-	<location>release/texttospeech-2.0.0.1.tgz</location>
+	<location>release/texttospeech-2.0.0.2.tgz</location>
 
 	<depends>
-		<module>core ge 2.10</module>
+		<module>core ge 2.9</module>
 	</depends>
 
 	<description>
@@ -41,6 +41,10 @@
 	</description>
 	<info></info>
 	<changelog>
+		*2.0.0.2 - 2012-04-28 - Paul White (pwhite@hiddenmatrix.org)*
+			- Added backwards compatibility support for FreePBX 2.9
+			- See ChangeLog for more details
+
 		*2.0.0.1 - 2012-04-25 - Paul White (pwhite@hiddenmatrix.org)*
 			- Added dependency for freepbx 2.10 or higher
 
