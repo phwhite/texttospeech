@@ -1,0 +1,51 @@
+2012-04-28  paul white	<pwhite@hiddenmatrix.org>
+
+	* play_audio.php:
+	* play_audio.html.php: Renamed file (added .html on extension), since
+	FreePBX 2.9 only supports direct file handlers with this extension
+
+	* helpers/debug.helper.php (New): A copy of my own debugging PHP class
+
+	* helpers/form_helper.php (New): This is a direct copy from FreePBX 2.10.
+	This local copy isn't used unless running on FreePBX 2.9.
+
+	* helpers/form.helper.php (New): If FreePBX 2.9 is detected, this sets up
+	the things required to include from_helper.php above.  All action is
+	skipped if running FreePBX 2.10 or higher.
+
+	* functions.inc.php (Global): Create new default debug class.  Currently
+	logs to fpbx-texttospeech.log in the asterisk log folder, and the default
+	level is currently VERBOSE for now.  Will change to NOTICE level later.
+	Also FreePBX version is checked, and a legacy flag is set if version is
+	less then 2.10.
+
+	* functions.inc.php (All Over): Removed usage of original $tts_debug flag,
+	and no longer use dbug() unless something drastic went wrong.
+
+	* functions.inc.php (texttospeech_debug_prefix): New function.  Sets up
+	prefix used for debugging messages based on the active tts entry.
+
+	* functions.inc.php (texttospeech_process_request):
+	* functions.inc.php (texttospeech_modify_entry):
+	* functions.inc.php (texttospeech_remove_entry):
+	* functions.inc.php (texttospeech_load_entry): Resets the debugging prefix
+	once a new entry is loaded
+
+	* page.texttospeech.php (Global): Require the new form.helper, and reset
+	the debug prefix once form variables have been parsed
+
+	* module.xml: Changed version to 2.0.0.2, changed dependency to core
+	module greater than or equal to 2.9, Updated changelog
+
+	* views/top.php: Just reformatted a little bit when debugging on 2.9
+
+	* views/javascript.php: Split up showing submit progress based on freepbx
+	legacy flag.  If Legacy, no progress is indicated.  Progress is still
+	indicated on FreePBX 2.10.
+
+	* sources/source.php: Fixed warning being displayed in freepbx debug log
+
+	* engines/*.engine.php, sources/*.source.php: Removed old debugging using
+	dbug() function, and now report verbose debugging information to the new
+	fpbx-texttospeech.log file
+
