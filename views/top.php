@@ -54,21 +54,27 @@ if (!empty($tts_vars['id'])) {
 							. ' cellpadding=0 cellspacing=0><tr><td align=middle>';
 		$crypt = new Crypt();
 
-		$REC_CRYPT_PASSWORD = (isset($amp_conf['AMPPLAYKEY']) &&
-						   			trim($amp_conf['AMPPLAYKEY']) != "") ?
-										trim($amp_conf['AMPPLAYKEY']) : 'MaryTheWindCries';
-		$file = urlencode($crypt->encrypt($soundfile,$REC_CRYPT_PASSWORD));
+
+		if (isset($amp_conf['AMPPLAYKEY']) && trim($amp_conf['AMPPLAYKEY']) != '') {
+			$play_key = trim($amp_conf['AMPPLAYKEY']);
+		}
+		else {
+			$play_key = 'MaryTheWindCries';
+		}
+
+		$file = urlencode($crypt->encrypt($soundfile,$play_key));
 		if ($tts->source->is_dynamic()) {
 			echo "<font size=-2><b>Play Last Dynamically Generated File:</b></font><br>";
 		}
 		else {
 			echo "<font size=-2><b>Play Last Generated Sound File:</b></font><br>";
 		}
-		echo("<embed width='95%' type='audio/basic' src='" . $_SERVER['PHP_SELF']
+		echo("<embed width='95%' type='audio/basic' src='"
+				. $_SERVER['PHP_SELF']
 				. "?skip_astman=1&quietmode=1&handler=file&module="
-				. $display . "&file=play_audio.php&audio_file=" . $file
+				. $display . "&file=play_audio.html.php&audio_file=" . $file
 				. "' width=300, height=25 class=#F5F5F5 autoplay=false"
-		    	. " loop=false></embed>");
+	    		. " loop=false></embed>");
 		echo '</td></tr></table>';
 	}
 }
