@@ -22,11 +22,14 @@ $tts_module_name		= 'texttospeech';
 $tts_context_prefix		= 'ext-' . $tts_module_name . '-';
 $tts_sound_dir			= 'texttospeech/';
 $tts_cache_dir			= $asterisk_conf['astvarlibdir'] . '/sounds/' . $tts_sound_dir;
-$tts_debug				= false;
+$tts_legacy_fpbx		= false;
+$tts_debug_enabled		= true;
+$tts_debug_file			= $asterisk_conf['astlogdir'] . "/fpbx-texttospeech.log";
+$tts_debug_level		= 0;		// 0 = Verbose, 1 = Notices, 2 = Warnings, 3 = Errors
 $tts_auto_reload		= false;	// FOR DEBUGGING ONLY !!!!!
 $tts_run_test			= false;	// FOR DEBUGGING ONLY !!!!
 $tts_test_name			= 'pwtest';
-$tts_test_cmd			= '/export/pbx/bin/pwcall -f "TTS Test <421>" 421';
+$tts_test_cmd			= '/export/pbx/bin/pbxconn -f "TTS Test <421>" -s 701 421';
 
 if (!is_dir($tts_cache_dir)) {
     mkdir($tts_cache_dir, 0755);
@@ -39,10 +42,39 @@ $destidx = 1;
 require_once(dirname(__FILE__) . "/texttospeech.php");
 $tts = New texttospeech;
 
+// Create our debug class
+require_once(dirname(__FILE__) . "/helpers/debug.helper.php");
+$tts_debug = New debug;
+if ($tts_debug_enabled == true) {
+	$tts_dbg_prefix = "[" . date("Y-m-d H:i:s") . " | TTS-%L] ";
+	$tts_debug->set( Array(	'file'			=> $tts_debug_file,
+							'level'			=> $tts_debug_level,
+							'prefix'		=> $tts_dbg_prefix		) );
+}
+
+$minfo = module_getinfo("core");
+$core_ver = explode(".", $minfo['core']['version']);
+if (count($core_ver) > 1) {
+//	$tts_debug->verbose("Detected FreePBX version " . $core_ver[0] . "." . $core_ver[1]);
+	if ($core_ver[0] == '2' && $core_ver[1] < 10) {
+//		$tts_debug->verbose("Enabled FPBX Legacy flag");
+		$tts_legacy_fpbx = true;
+	}
+}
+
 // Functions
+function texttospeech_debug_prefix($tts_vars) {
+	global $tts_debug;
+
+	$tts_dbg_prefix = "[" . date("Y-m-d H:i:s")
+					. " | " . $tts_vars['id'] . ":" . $tts_vars['name']
+					. " | " . $tts_vars['source'] . ":" . $tts_vars['engine']
+					. " | TTS-%L] ";
+	$tts_debug->set_prefix($tts_dbg_prefix);
+}
+
 function texttospeech_list() {
 	global $db;
-	global $tts_debug;
 
 	$sql = "SELECT id, name FROM texttospeech ORDER BY name";
 
@@ -51,15 +83,12 @@ function texttospeech_list() {
 		return null;
 	}
 
-	if ($tts_debug) dbug('Returning ' . count($result) . ' entries');
-
 	return $result;
 }
 
 function texttospeech_load_entry($id) {
 	global $db;
 	global $tts;
-	global $tts_debug;
 
 	$sql = "SELECT * FROM texttospeech WHERE id = ". sql_formattext($id);
 
@@ -80,10 +109,7 @@ function texttospeech_load_entry($id) {
 		$tts->set_engine_config($cfg['engine_conf']);
 	}
 
-	if ($tts_debug) dbug('Returning entry ' . $cfg['id'] . ' "' . $cfg['name']
-												. '" Source "' . $cfg['source']
-												. '" Engine "' . $cfg['engine'] . '"'); 
-
+	texttospeech_debug_prefix($cfg);
 	return $cfg;
 }
 
@@ -127,15 +153,12 @@ function texttospeech_destinations() {
 function texttospeech_get_config($pbx) {
 	global $tts_context_prefix;
 	global $ext;
-	global $tts_debug;
 
 	if ($pbx != 'asterisk') {
 		// Unsupported PBX system
-		if ($tts_debug) dbug('Configuration requested for unknown PBX system (' . $pbx . ')');
+		dbug('Configuration requested for unknown PBX system (' . $pbx . ')');
 		return;
 	}
-
-	if ($tts_debug) dbug('Generating Dialplan...');
 
 	foreach(texttospeech_list() as $ent) {
 		$cfg = texttospeech_load_entry($ent['id']);
@@ -143,8 +166,6 @@ function texttospeech_get_config($pbx) {
 
 		$context = $tts_context_prefix . $id;
 		$sound_file = texttospeech_sound_file($name, true);
-
-		if ($tts_debug) dbug('Creating ' . $context);
 
 		$ext->add(	$context,
 					's',
@@ -164,7 +185,6 @@ function texttospeech_get_config($pbx) {
 
 	}
 
-	if ($tts_debug) dbug('Done generating dialplan');
 	return;
 }
 
@@ -206,8 +226,6 @@ function texttospeech_process_request($_req = null) {
 		return null;
 	}
 
-	if ($tts_debug) dbug('Processing HTTP Request for our variables...');
-
 	// Move the variables we care about to our own array
 	$tts_vars = array();
 	foreach ($columns as $ca){ 
@@ -220,14 +238,10 @@ function texttospeech_process_request($_req = null) {
 			$tts_vars[$c] = '';
 		}
 
-		if ($tts_debug) dbug($c . ' = "' . $tts_vars[$c] . '"');
 	}
-
-	if ($tts_debug) dbug('Done');
 
 	// Setup default source if there isn't any set
 	if (empty($tts_vars['source'])) {
-		if ($tts_debug) dbug('Setting up default source...');
 		if (!($tts_vars['source'] = $tts->default_source())) {
 			reset($tts->sources);
 			$tts_vars['source'] = key($tts->sources);
@@ -236,7 +250,6 @@ function texttospeech_process_request($_req = null) {
 
 	// Setup default engine if there isn't any set
 	if (empty($tts_vars['engine'])) {
-		if ($tts_debug) dbug('Setting up default engine...');
 		if (!($tts_vars['engine'] = $tts->default_engine())) {
 			reset($tts->engines);
 			$tts_vars['engine'] = key($tts->engines);
@@ -259,10 +272,10 @@ function texttospeech_process_request($_req = null) {
 
 	// Set TTS source and engine, then process the request
 	if ($tts->set_source($tts_vars['source']) && $tts->set_engine($tts_vars['engine'])) {
-		if ($tts_debug) dbug('Calling TTS process request...');
 		$tts->process_request($tts_vars, $_req);
 	}
 
+	texttospeech_debug_prefix($tts_vars);
 	return $tts_vars;
 }
 
@@ -279,6 +292,7 @@ function texttospeech_modify_entry($tts_vars, $new_entry = false) {
 	global $tts;
 	global $tts_debug;
 
+	texttospeech_debug_prefix($tts_vars);
 	if ($new_entry) {
 		// Adding a new entry... make sure it's not a duplicate
 		foreach (texttospeech_list() as $ent) {
@@ -288,17 +302,19 @@ function texttospeech_modify_entry($tts_vars, $new_entry = false) {
 				return false;
 			}
 		}
+		$tts_debug->notice("Adding new entry");
+	}
+	else {
+		$tts_debug->notice("Saving entry changes");
 	}
 
 	// Get the source specific configuration
 	if (($tts_vars['source_conf'] = $tts->get_source_config()) === false) {
-		if ($tts_debug) dbug('Warning: TTS get_source_config() returned FALSE');
 		$tts_vars['source_conf'] = '';
 	}
 
 	// Get the engine specific configuration
 	if (($tts_vars['engine_conf'] = $tts->get_engine_config()) === false) {
-		if ($tts_debug) dbug('Warning: TTS get_engine_config() returned FALSE');
 		$tts_vars['engine_conf'] = '';
 	}
 
@@ -358,11 +374,11 @@ function texttospeech_remove_entry($id) {
 
 	$cfg = texttospeech_load_entry($id);
 	if ($cfg) {
+		$tts_debug->notice("Removing entry");
 		// Remove text file
 		$text_file = texttospeech_text_file($cfg['name']);
 		if (file_exists($text_file)) {
 			if (!unlink($text_file)) {
-				if ($tts_debug) dbug('WARNING - Unable to remove text file "' . $text_file . '"');
 			}
 		}
 
@@ -370,7 +386,6 @@ function texttospeech_remove_entry($id) {
 		$sound_file = texttospeech_sound_file($cfg['name']);
 		if (file_exists($sound_file)) {
 			if (!unlink($sound_file)) {
-				if ($tts_debug) dbug('WARNING - Unable to remove sound file "' . $sound_file . '"');
 				die_freepbx(__FILE__ . " - " . __FUNCTION__
 								  	  . "() - Could not delete sound file: " . $sound_file);
 				return false;
@@ -394,9 +409,9 @@ function texttospeech_remove_entry($id) {
 function texttospeech_auto_reload() {
 	global $tts_auto_reload;
 	global $asterisk_conf;
-	global $tts_debug;
+	global $tts_debug_enabled;
 
-	if ($tts_debug == false || $tts_auto_reload == false) {
+	if ($tts_debug_enabled == false || $tts_auto_reload == false) {
 		return false;
 	}
 
@@ -409,16 +424,15 @@ function texttospeech_auto_reload() {
 }
 
 function texttospeech_run_test($tts_vars) {
-	global $tts_debug;
+	global $tts_debug_enabled;
 	global $tts_run_test;
 	global $tts_test_cmd;
 	global $tts_test_name;
 
-	if ($tts_debug == false || $tts_run_test == false || $tts_vars['name'] != $tts_test_name) {
+	if ($tts_debug_enabled == false || $tts_run_test == false || $tts_vars['name'] != $tts_test_name) {
 		return false;
 	}
 
-	if ($tts_debug) dbug('Running TEST command for entry ' . $tts_vars['name']);
 	echo '<h2>Notice: Running test command</h2>';
 
 	exec($tts_test_cmd, $eout, $ret);
