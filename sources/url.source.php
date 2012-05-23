@@ -143,19 +143,27 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 		global $tts_debug;
 
 		if (!isset($conf['url']) || empty($conf['url'])) {
+			$tts_debug->error("Failed to get text from URL: No URL configured");
 			return false;
 		}
 
 		if (($pos = strpos($conf['url'], ':')) === false) {
+			$tts_debug->error("Failed to get text from URL: Bad URL configured");
+			$tts_debug->error_dump("url", $conf['url']);
 			return false;
 		}
 		if (substr($conf['url'], $pos, 3) != '://') {
+			$tts_debug->error("Failed to get text from URL: Bad URL configured (no <stream>:// found");
+			$tts_debug->error_dump("url", $conf['url']);
 			return false;
 		}
 
 		$proto = substr($conf['url'], 0, $pos);
 		$wrappers = stream_get_wrappers();
 		if (!in_array($proto, $wrappers)) {
+			$tts_debug->error("Failed to get text from URL: No stream wrapper for '" . $proto . "' was found");
+			$tts_debug->error_dump("url", $conf['url']);
+			$tts_debug->error_dump("wrappers", $wrappers);
 			return false;
 		}
 
