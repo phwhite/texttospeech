@@ -121,9 +121,9 @@ class _tts_engine {
 		array_push($dcmds, $this->engine_cmd);
 		
 		foreach($dcmds as $dcmd) {
-			$lastone = exec("which $dcmd", $iout, $rval);
-			if ($rval != 0) {
-				$lastone = exec("which ".trim($amp_conf['AMPBIN'])."/$dcmd", $iout, $rval);
+			$lastone = exec("which $dcmd 2>/dev/null", $iout, $rval);
+			if ($rval != 0 && isset($amp_conf['AMPBIN']) && !empty($amp_conf['AMPBIN'])) {
+				$lastone = exec("which ".trim($amp_conf['AMPBIN'])."/$dcmd 2>/dev/null", $iout, $rval);
 			}
 		
 			if ($rval != 0) {
