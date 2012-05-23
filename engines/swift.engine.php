@@ -71,21 +71,31 @@ class _tts_engine_swift extends _tts_engine {
 			}
 		}
 
-		// Check to see if we have the swift() app, and if so, enable dynamic support.
-		$last = exec('asterisk -rx "core show application swift" | egrep "not registered"', $eoutput, $ret);
-
-		if ($ret == 0) {
-			// Try to load it
-			exec('asterisk -rx "module load app_swift"', $eoutput, $ret);
-	
-			// Check again
-			$last = exec('asterisk -rx "core show application swift" | egrep "not registered"', $eoutput, $ret);
+		/*** Check to see if app_swift is available for dynamic support ***/
+		// Find the asterisk command first
+		$lastone = exec("which asterisk 2>/dev/null", $iout, $rval);
+		if ($rval != 0 && isset($amp_conf['AMPBIN']) && !empty($amp_conf['AMPBIN'])) {
+			$lastone = exec("which ".trim($amp_conf['AMPBIN'])."/asterisk 2>/dev/null", $iout, $rval);
 		}
+	
+		if ($rval == 0) {
+			$astcmd = $lastone;
 
-		if ($ret == 1) {
-			// App was found, enable dynamic support...
-			$this->info['can_be_dynamic'] = 1;
-			$this->defaults['dynamic'] = '';
+			$last = exec($astcmd . ' -rx "core show application swift" | egrep "not registered"', $eoutput, $ret);
+
+			if ($ret == 0) {
+				// Try to load it
+				exec($astcmd . ' -rx "module load app_swift"', $eoutput, $ret);
+	
+				// Check again
+				$last = exec($astcmd . ' -rx "core show application swift" | egrep "not registered"', $eoutput, $ret);
+			}
+
+			if ($ret == 1) {
+				// App was found, enable dynamic support...
+				$this->info['can_be_dynamic'] = 1;
+				$this->defaults['dynamic'] = '';
+			}
 		}
 	}
 
