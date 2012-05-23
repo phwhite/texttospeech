@@ -6,9 +6,9 @@
 		<texttospeech>Text To Speech</texttospeech>
 	</menuitems>
 
-	<version>2.0.0.2</version>
+	<version>2.0.0.3</version>
 	<publisher>pwhite@hiddenmatrix.org</publisher>
-	<location>release/texttospeech-2.0.0.2.tgz</location>
+	<location>release/texttospeech-2.0.0.3.tgz</location>
 
 	<depends>
 		<module>core ge 2.9</module>
@@ -41,6 +41,14 @@
 	</description>
 	<info></info>
 	<changelog>
+		*2.0.0.3 - 2012-05-23 - Paul White (pwhite@hiddenmatrix.org)*
+			- Fixed the "command not found" messages that were being added to
+			  the asterisk log file
+			- Added better support for finding the asterisk binary when looking
+			  for the app_swift application for dynamic swift support
+			- Added more detailed debugging messages to the URL source when
+			  failures occure
+
 		*2.0.0.2 - 2012-04-28 - Paul White (pwhite@hiddenmatrix.org)*
 			- Added backwards compatibility support for FreePBX 2.9
 			- See ChangeLog for more details
