@@ -1,3 +1,20 @@
+2012-05-02  paul white	<pwhite@hiddenmatrix.org>
+
+	* engines/engine.php:
+	* sources/source.php: Added stderr redirection of 'which' commands to
+	null.  This stops the 'command not found' asterisk log messages.
+
+	* engines/swift.engine.php: Use 'which' to find the location of the
+	asterisk binary, before checking for the app_swift application.  On some
+	systems, it doesn't seem to be in the default PATH.  If not found in the
+	default PATH, the AMPBIN directory is checked.
+
+	* sources/url.source.php: Added more specific debug messages for when 
+	fetching a URL fails.
+
+	* module.xml: Bumped version to 2.0.0.3, and updated changelog.
+
+
 2012-04-28  paul white	<pwhite@hiddenmatrix.org>
 
 	* play_audio.php:
