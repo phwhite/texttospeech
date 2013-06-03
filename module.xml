@@ -6,9 +6,9 @@
 		<texttospeech>Text To Speech</texttospeech>
 	</menuitems>
 
-	<version>2.0.0.3</version>
+	<version>2.0.0.4</version>
 	<publisher>pwhite@hiddenmatrix.org</publisher>
-	<location>release/texttospeech-2.0.0.3.tgz</location>
+	<location>release/texttospeech-2.0.0.4.tgz</location>
 
 	<depends>
 		<module>core ge 2.9</module>
@@ -41,6 +41,10 @@
 	</description>
 	<info></info>
 	<changelog>
+		*2.0.0.4 - 2013-06-02 - Gaby Stallo (gaby86@gmail.com)*
+			- Added support to send dynamic AGI variables over POST with
+			  dynamic URL sources
+			
 		*2.0.0.3 - 2012-05-23 - Paul White (pwhite@hiddenmatrix.org)*
 			- Fixed the "command not found" messages that were being added to
 			  the asterisk log file

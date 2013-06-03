@@ -26,8 +26,10 @@ class _tts_source_url extends _tts_source {
 
 	var $depend_cmds = array();
 	var $depend_files = array();
-
+	
+	//modif gaby
 	var $defaults = array(	'url'			=> '',
+							'vars'			=> '',
 							'dynamic'		=> 0,
 							'strip_tags'	=> 1,
 							'timeout'		=> 5,
@@ -50,6 +52,20 @@ class _tts_source_url extends _tts_source {
 						'value'		=> $this->config['url']
 			);
 		$table->add_row($label, form_input($fdata));
+
+		//modif gaby (campo de variables)
+		$label = fpbx_label(	_('Dynamic AGI variables'),
+								_('AGI variables (both \'request variables\' as \'agi_callerid\' and variables set by other applications) to be sent as POST data to the URL (separed by commas). Leave this blank if you don\'t want to send any variable.')
+						);
+		$fdata = array(	'name'		=> $this->config_form_id('vars'),
+						'tabindex'	=> ++$tabindex,
+						'size	'	=> '65',
+						'maxlength'	=> '255',
+						'value'		=> $this->config['vars']
+			);
+		$table->add_row($label, form_input($fdata));
+		
+		
 
 		$label = fpbx_label(	_('Strip Tags'),
 								_('If checked, Any tags (html, php, etc) received from the configured URL will '
@@ -138,8 +154,8 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 <?php
 
 	} // end of javascript_out()
-
-	function do_get($text_file, $conf) {
+	
+	function do_get($text_file, $conf, $dynvars=null) {
 		global $tts_debug;
 
 		if (!isset($conf['url']) || empty($conf['url'])) {
@@ -166,11 +182,17 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 			$tts_debug->error_dump("wrappers", $wrappers);
 			return false;
 		}
+		
+		//modif gaby
+		if(is_array($dynvars) && !empty($dynvars)) {
+			$ctx_opts = array('http' => array('method'=> "POST", 'timeout' => $conf['timeout'],
+			'header' => 'Content-Type: application/x-www-form-urlencoded',
+	        	'content' => http_build_query($dynvars)
+			));
+		} else {
+			$ctx_opts = array('http' => array('method'=> "GET", 'timeout' => $conf['timeout']));
+		}
 
-		$ctx_opts = array(	'http' => array(	'method'	=> "GET",
-												'timeout'	=> $conf['timeout']
-										   )
-						 );
 		$ctx = stream_context_create($ctx_opts);
 		if (($fp = fopen($conf['url'], 'r', false, $ctx)) == null) {
 			$tts_debug->error("Failed to get text from URL");

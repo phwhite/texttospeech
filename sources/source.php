@@ -226,8 +226,9 @@ class _tts_source {
 
 		return $this->javascript_out();
 	}
-
-	function get($dest_file, $conf) {
+	
+	//modif gaby
+	function get($dest_file, $conf, $dynvars=null) {
 		if ($this->is_supported < 1) {
 			return false;
 		}
@@ -239,7 +240,7 @@ class _tts_source {
 			}
 		}
 
-		return $this->do_get($dest_file, $sconf);
+		return $this->do_get($dest_file, $sconf, $dynvars);
 	}
 
 
@@ -293,8 +294,8 @@ function <?php echo $this->js_func('submit_check') ?>(frm) {
 <?php
 
 	} // end of javascript_out()
-
-	function do_get($text_file, $conf) {
+	//modif gaby
+	function do_get($text_file, $conf, $dynvars=null) {
 		// Place text value from configured source into passed text file
 		return true;
 	}
