@@ -267,7 +267,19 @@ else {
 // Source Check: If dynamic, fetch text now
 if ($tts->source->is_dynamic()) {
 	ttsagi_debug('Source is dynamic: Querying now...');
-	if ($tts->source->get($text_file) === false) {
+	//modif gaby
+	$vars=explode(",", $tts->source->config['vars']);
+	$post=array();
+	foreach($vars as $var) {
+		$var=trim($var);
+		if(isset($agi->request[$var])) {
+			$post[$var]=$agi->request[$var];
+		} else {
+			$post[$var]=ttsagi_getvar($var);
+		}
+	}
+
+	if ($tts->source->get($text_file, "", $post) === false) {
 		if (count($src_fail_dest) == 0) {
 			ttsagi_errorout('ERROR: Querying source failed, and no failure destination set');
 		}
